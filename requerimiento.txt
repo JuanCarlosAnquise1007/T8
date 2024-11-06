@@ -1,2 +1,4 @@
-ggplot
-aotugrad
+numpy
+matplotlib.pyplot
+grad
+autograd.numpy
