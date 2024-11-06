@@ -1,4 +1,5 @@
 numpy==1.23.5
-matplotlib.pyplot==3.6.2
+matplotlib==3.6.2
+pyplot
 grad==0.0.5
 autograd==1.5
