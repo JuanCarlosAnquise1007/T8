@@ -1,4 +1,4 @@
-numpy
-matplotlib
-grad
-autograd
+numpy==1.23.5
+matplotlib==3.6.2
+grad==0.0.5
+autograd==1.5
