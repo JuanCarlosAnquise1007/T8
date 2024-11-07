@@ -1,4 +1,5 @@
-numpy
+streamlit
+pulp
+pandas
 matplotlib
-grad
-autograd
+numpy

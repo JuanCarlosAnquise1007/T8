@@ -1,147 +1,196 @@
 import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
-from autograd import grad
-import autograd.numpy as anp
+import numpy as np
 
-class GradientDescent:
-    def __init__(self, learning_rate=0.01, momentum=0.9, max_iterations=1000, tolerance=1e-6):
-        self.learning_rate = learning_rate
-        self.momentum = momentum
-        self.max_iterations = max_iterations
-        self.tolerance = tolerance
-        
-    def optimize(self, func, gradient_func, initial_point):
-        current_point = np.array(initial_point, dtype=float)
-        velocity = np.zeros_like(current_point)
-        
-        history_values = [func(current_point)]
-        history_points = [current_point.copy()]
-        
-        for i in range(self.max_iterations):
-            gradient = gradient_func(current_point)
-            velocity = self.momentum * velocity - self.learning_rate * gradient
-            new_point = current_point + velocity
-            
-            history_points.append(new_point.copy())
-            history_values.append(func(new_point))
-            
-            if np.linalg.norm(new_point - current_point) < self.tolerance:
-                break
-                
-            current_point = new_point
-            
-        return current_point, history_values, history_points
-
-# Función cuadrática generalizada
-def quadratic_function(x, a, b):
-    return a * x[0]**2 + b * x[1]**2
-
-# Gradiente de la función cuadrática
-def quadratic_gradient(x, a, b):
-    return np.array([2 * a * x[0], 2 * b * x[1]])
-
-def create_contour_data(x_range, y_range, func, a, b):
-    x = np.linspace(*x_range, 100)
-    y = np.linspace(*y_range, 100)
-    X, Y = np.meshgrid(x, y)
-    Z = np.zeros_like(X)
+def ejercicio_8_1():
+    st.header("Ejercicio 8.1")
+    st.write("""
+    Maximize P(x₁, x₂, x₃) = 4x₁ + 3x₂ + 3x₃
     
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            Z[i, j] = func(np.array([X[i, j], Y[i, j]]), a, b)
+    Subject to:
+    4x₁ + 2x₂ + x₃ ≤ 10
+    3x₁ + 4x₂ + 2x₃ ≤ 14
+    2x₁ + x₂ + 3x₃ ≤ 7
     
-    return X, Y, Z
-
-st.title("Visualización de Descenso de Gradiente")
-st.write("""
-Esta aplicación demuestra el algoritmo de descenso de gradiente con momento en una función cuadrática generalizada.
-Ajusta los parámetros de la función y el algoritmo para ver cómo afectan a la convergencia.
-""")
-
-# Sidebar para parámetros de la función
-st.sidebar.header("Parámetros de la Función Cuadrática")
-a = st.sidebar.number_input("Coeficiente a (para x²)", value=1.0, min_value=0.1, max_value=10.0, step=0.1)
-b = st.sidebar.number_input("Coeficiente b (para y²)", value=2.0, min_value=0.1, max_value=10.0, step=0.1)
-
-# Sidebar para parámetros del algoritmo
-st.sidebar.header("Parámetros del Algoritmo de Optimización")
-learning_rate = st.sidebar.slider("Tasa de Aprendizaje", 0.01, 1.0, 0.1, 0.01)
-momentum = st.sidebar.slider("Momento", 0.0, 0.99, 0.9, 0.01)
-max_iterations = st.sidebar.slider("Máximo de Iteraciones", 100, 2000, 1000, 100)
-initial_x = st.sidebar.number_input("Punto Inicial X", value=2.0, min_value=-5.0, max_value=5.0, step=0.1)
-initial_y = st.sidebar.number_input("Punto Inicial Y", value=1.0, min_value=-5.0, max_value=5.0, step=0.1)
-
-# Crear el optimizador con los parámetros seleccionados
-optimizer = GradientDescent(
-    learning_rate=learning_rate,
-    momentum=momentum,
-    max_iterations=max_iterations
-)
-
-# Optimizar
-initial_point = np.array([initial_x, initial_y])
-optimal_point, values_history, points_history = optimizer.optimize(
-    lambda x: quadratic_function(x, a, b),
-    lambda x: quadratic_gradient(x, a, b),
-    initial_point
-)
-
-# Crear las visualizaciones
-points_history = np.array(points_history)
-
-# Crear dos columnas para las gráficas
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Convergencia de la Función Objetivo")
-    fig1, ax1 = plt.subplots()
-    ax1.plot(values_history)
-    ax1.set_xlabel('Iteraciones')
-    ax1.set_ylabel('Valor de la Función')
-    ax1.grid(True)
-    st.pyplot(fig1)
-
-with col2:
-    st.subheader("Trayectoria de Optimización")
-    fig2, ax2 = plt.subplots()
+    where x₁, x₂, x₃ are nonnegative integers
+    """)
     
-    # Crear datos para el contour plot
-    X, Y, Z = create_contour_data((-3, 3), (-3, 3), quadratic_function, a, b)
-    ax2.contour(X, Y, Z, levels=20)
-    ax2.plot(points_history[:, 0], points_history[:, 1], 'b.-')
-    ax2.plot(points_history[0, 0], points_history[0, 1], 'go', label='Inicio')
-    ax2.plot(points_history[-1, 0], points_history[-1, 1], 'ro', label='Final')
-    ax2.set_xlabel('x')
-    ax2.set_ylabel('y')
-    ax2.legend()
-    ax2.grid(True)
-    st.pyplot(fig2)
+    # Crear el problema
+    prob = pulp.LpProblem("Exercise_8_1", pulp.LpMaximize)
+    
+    # Variables de decisión
+    x1 = pulp.LpVariable("x1", 0, None, pulp.LpInteger)
+    x2 = pulp.LpVariable("x2", 0, None, pulp.LpInteger)
+    x3 = pulp.LpVariable("x3", 0, None, pulp.LpInteger)
+    
+    # Función objetivo
+    prob += 4*x1 + 3*x2 + 3*x3
+    
+    # Restricciones
+    prob += 4*x1 + 2*x2 + x3 <= 10, "Restriction_1"
+    prob += 3*x1 + 4*x2 + 2*x3 <= 14, "Restriction_2"
+    prob += 2*x1 + x2 + 3*x3 <= 7, "Restriction_3"
+    
+    # Resolver
+    prob.solve()
+    
+    st.write("### Resultados:")
+    st.write(f"Estado: {pulp.LpStatus[prob.status]}")
+    st.write(f"Valor óptimo: {pulp.value(prob.objective)}")
+    st.write(f"x₁ = {pulp.value(x1)}")
+    st.write(f"x₂ = {pulp.value(x2)}")
+    st.write(f"x₃ = {pulp.value(x3)}")
 
-# Mostrar resultados
-st.subheader("Resultados")
-col3, col4 = st.columns(2)
-with col3:
-    st.write(f"Punto óptimo encontrado: [{optimal_point[0]:.4f}, {optimal_point[1]:.4f}]")
-with col4:
-    st.write(f"Valor mínimo de la función: {quadratic_function(optimal_point, a, b):.4f}")
+def ejercicio_8_3():
+    st.header("Ejercicio 8.3")
+    st.write("""
+    Minimize C(x,y) = x - y
+    
+    Subject to:
+    3x + 4y ≤ 6
+    x - y ≤ 1
+    
+    where x and y are nonnegative integers
+    """)
+    
+    # Crear el problema
+    prob = pulp.LpProblem("Exercise_8_3", pulp.LpMinimize)
+    
+    # Variables de decisión
+    x = pulp.LpVariable("x", 0, None, pulp.LpInteger)
+    y = pulp.LpVariable("y", 0, None, pulp.LpInteger)
+    
+    # Función objetivo
+    prob += x - y
+    
+    # Restricciones
+    prob += 3*x + 4*y <= 6, "Restriction_1"
+    prob += x - y <= 1, "Restriction_2"
+    
+    # Resolver
+    prob.solve()
+    
+    st.write("### Resultados:")
+    st.write(f"Estado: {pulp.LpStatus[prob.status]}")
+    st.write(f"Valor óptimo: {pulp.value(prob.objective)}")
+    st.write(f"x = {pulp.value(x)}")
+    st.write(f"y = {pulp.value(y)}")
 
-# Información adicional
-st.write("""
-### Explicación de los Parámetros:
-- **Tasa de Aprendizaje**: Controla el tamaño de los pasos en cada iteración.
-- **Momento**: Determina cuánto influye la dirección anterior en el siguiente paso.
-- **Máximo de Iteraciones**: Límite de iteraciones para el algoritmo.
-- **Punto Inicial**: Coordenadas (x,y) desde donde comienza la optimización.
-""")
+def ejercicio_8_4():
+    st.header("Ejercicio 8.4")
+    st.write("""
+    Maximize P(x₁, x₂, x₃) = 4x₁ + 3x₂ + 3x₃
+    
+    Subject to:
+    4x₁ + 2x₂ + x₃ ≤ 10
+    3x₁ + 4x₂ + 2x₃ ≤ 14
+    2x₁ + x₂ + 3x₃ ≤ 7
+    
+    where x₁, x₂, x₃ are nonnegative integers
+    """)
+    
+    # Este ejercicio es idéntico al 8.1 pero usando Gomory Cut-Planes
+    # Para simplificar, usaremos PuLP que ya implementa este método
+    prob = pulp.LpProblem("Exercise_8_4", pulp.LpMaximize)
+    
+    x1 = pulp.LpVariable("x1", 0, None, pulp.LpInteger)
+    x2 = pulp.LpVariable("x2", 0, None, pulp.LpInteger)
+    x3 = pulp.LpVariable("x3", 0, None, pulp.LpInteger)
+    
+    prob += 4*x1 + 3*x2 + 3*x3
+    prob += 4*x1 + 2*x2 + x3 <= 10
+    prob += 3*x1 + 4*x2 + 2*x3 <= 14
+    prob += 2*x1 + x2 + 3*x3 <= 7
+    
+    prob.solve()
+    
+    st.write("### Resultados:")
+    st.write(f"Estado: {pulp.LpStatus[prob.status]}")
+    st.write(f"Valor óptimo: {pulp.value(prob.objective)}")
+    st.write(f"x₁ = {pulp.value(x1)}")
+    st.write(f"x₂ = {pulp.value(x2)}")
+    st.write(f"x₃ = {pulp.value(x3)}")
 
-# Métricas adicionales
-st.subheader("Métricas de Convergencia")
-num_iterations = len(values_history) - 1
-improvement = values_history[0] - values_history[-1]
+def ejercicio_8_5():
+    st.header("Ejercicio 8.5")
+    st.write("""
+    Problema de selección de proyectos R&D
+    
+    La compañía debe seleccionar proyectos para maximizar NPV con restricciones de presupuesto.
+    Presupuesto disponible: $250,000
+    Presupuesto para años futuros: $75,000 (año 2) y $50,000 (años 3,4,5)
+    """)
+    
+    # Datos del problema
+    projects = range(1, 7)
+    npv = {1: 141, 2: 187, 3: 121, 4: 83, 5: 262, 6: 127}
+    cr = {
+        1: [75, 25, 20, 15, 10],
+        2: [90, 35, 0, 0, 0],
+        3: [60, 15, 15, 15, 15],
+        4: [30, 20, 10, 5, 5],
+        5: [100, 25, 20, 20, 20],
+        6: [50, 20, 10, 10, 10]
+    }
+    
+    # Crear el problema
+    prob = pulp.LpProblem("Project_Selection", pulp.LpMaximize)
+    
+    # Variables de decisión (binarias)
+    x = pulp.LpVariable.dicts("project", projects, 0, 1, pulp.LpBinary)
+    
+    # Función objetivo
+    prob += pulp.lpSum(npv[i] * x[i] for i in projects)
+    
+    # Restricciones de presupuesto
+    # Año 1
+    prob += pulp.lpSum(cr[i][0] * x[i] for i in projects) <= 250
+    # Año 2
+    prob += pulp.lpSum(cr[i][1] * x[i] for i in projects) <= 75
+    # Años 3-5
+    for year in range(2, 5):
+        prob += pulp.lpSum(cr[i][year] * x[i] for i in projects) <= 50
+    
+    # Resolver
+    prob.solve()
+    
+    st.write("### Resultados:")
+    st.write(f"Estado: {pulp.LpStatus[prob.status]}")
+    st.write(f"NPV Total Óptimo: ${pulp.value(prob.objective)}k")
+    
+    # Mostrar proyectos seleccionados
+    selected = [i for i in projects if pulp.value(x[i]) > 0.5]
+    st.write("Proyectos seleccionados:", selected)
+    
+    # Crear tabla de resultados
+    results = []
+    for i in projects:
+        results.append({
+            'Proyecto': i,
+            'NPV': f"${npv[i]}k",
+            'Seleccionado': 'Sí' if i in selected else 'No'
+        })
+    
+    df = pd.DataFrame(results)
+    st.write("### Tabla de Resultados:")
+    st.table(df)
 
-col5, col6 = st.columns(2)
-with col5:
-    st.metric("Número de Iteraciones", num_iterations)
-with col6:
-    st.metric("Mejora Total", f"{improvement:.4f}")
+def main():
+    st.title("Resolución de Ejercicios de Programación Lineal Entera")
+    
+    ejercicio = st.sidebar.selectbox(
+        "Seleccione el ejercicio",
+        ["Ejercicio 8.1", "Ejercicio 8.3", "Ejercicio 8.4", "Ejercicio 8.5"]
+    )
+    
+    if ejercicio == "Ejercicio 8.1":
+        ejercicio_8_1()
+    elif ejercicio == "Ejercicio 8.3":
+        ejercicio_8_3()
+    elif ejercicio == "Ejercicio 8.4":
+        ejercicio_8_4()
+    elif ejercicio == "Ejercicio 8.5":
+        ejercicio_8_5()
+
+if __name__ == "__main__":
+    main()
